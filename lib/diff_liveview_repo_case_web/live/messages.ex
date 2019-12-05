@@ -4,36 +4,37 @@ defmodule DiffLiveviewRepoCaseWeb.MessagesLive do
 
   def render(assigns) do
     ~L"""
+      <div>TITLE: <%= @struct.title %> </div>
 
-      <%= live_component @socket, DiffLiveviewRepoCaseWeb.Component, id: :component, room_name: @room_name do %>
-
-      <div>OUTSIDE TITLE: <%= @other_name %> </div>
-
-      <div id="messages" phx-update="append">
-        <%= for message <- @messages do %>
+      <div id="messages">
+        <%= for message <- @struct.messages do %>
           <div id="<%= message.id %>"><%= message.content %></div>
         <% end %>
       </div>
-      <% end %>
+
       <br>
+
       <%= cool_divs(@other_thing) %>
     """
   end
 
   def mount(_initial_params, socket) do
     Phoenix.PubSub.subscribe(DiffLiveviewRepoCase.PubSub, "messages")
+    messages = [%{id: 1, content: "first"}, %{id: 2, content: "second"}]
 
     {:ok,
      assign(
        socket,
        room_name: "Hello World",
-       other_name: "SECOND TITLE",
-       other_thing: "test"
-     ), temporary_assigns: [messages: [%{id: 1, content: "first"}, %{id: 2, content: "second"}]]}
+       other_thing: "test",
+       struct: %{messages: messages, title: "some place nice"}
+     )}
   end
 
   def handle_info({:new_message, message}, socket) do
-    {:noreply, assign(socket, :messages, [message])}
+    new_struct = %{socket.assigns.struct | messages: [message | socket.assigns.struct.messages]}
+
+    {:noreply, assign(socket, :struct, new_struct)}
   end
 
   def handle_info({:update_thing, message}, socket) do
